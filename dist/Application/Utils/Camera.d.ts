@@ -1,0 +1,35 @@
+import CameraControls from 'camera-controls';
+import * as THREE from 'three';
+import SceneSizes from './SceneSizes';
+export default class Camera {
+    static numberOfScreens: number;
+    sizes: SceneSizes;
+    scene: THREE.Scene;
+    canvas: HTMLCanvasElement;
+    isPrespective: boolean;
+    enableRotation: boolean;
+    instance: THREE.PerspectiveCamera | THREE.OrthographicCamera | any;
+    controls: CameraControls | any;
+    x: number;
+    y: number;
+    width: number | any;
+    height: number | any;
+    widthRatio: number | any;
+    heightRatio: number | any;
+    private _lastZoomFactor;
+    constructor(sizes: SceneSizes, scene: THREE.Scene, canvas: HTMLCanvasElement, isPrespective?: boolean, enableRotation?: boolean);
+    setInstance(): void;
+    setControls(enableRotation?: boolean): void;
+    zoomIn(factor?: number): Promise<void>;
+    zoomOut(): Promise<void>;
+    disableMotion(): void;
+    enableMotion(): void;
+    disableTruck(): void;
+    enableTruck(): void;
+    changeOrthographicCameraDirection: (direction: "top" | "side" | "front") => void;
+    changeOrthographicCameraSectionView: (position: THREE.Vector3, lookAt: THREE.Vector3) => void;
+    isMouseOver(x: number, y: number): this | null;
+    resize(): void;
+    update(): void;
+    dispose(): void;
+}

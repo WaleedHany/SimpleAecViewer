@@ -1,0 +1,31 @@
+import { Group, Line, Material, Plane, Scene, Vector3 } from "three";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls";
+import Renderer from "../../Utils/Renderer";
+import Camera from "../../Utils/Camera";
+export default class Section {
+    plane: Plane;
+    transformControl: TransformControls;
+    camera: Camera;
+    renderer: Renderer;
+    initialPosition: Vector3;
+    scene: Scene;
+    zDir: Vector3;
+    yDir: Vector3;
+    outLine: Line;
+    callBack: Function;
+    gizmo: any;
+    horizontalPlane: Plane;
+    midpoint: Vector3;
+    midPlaneMesh: any;
+    static materials: Material[];
+    constructor(normal: Vector3, position: Vector3, max: Vector3, min: Vector3, camera: Camera, scene: Scene, renderer: Renderer, callBack?: Function);
+    setOutLine(min: Vector3, max: Vector3): void;
+    showOutLine(group: Group): void;
+    hideOutLine(group: Group): void;
+    highlight(group: Group): void;
+    unhighlight(): void;
+    activate(): void;
+    deactivate(): void;
+    getCameraPosition(distance: number): any;
+    getAllMaterials(group: Group): void;
+}
