@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import {Box3, LineSegments, Mesh, Vector3} from "three";
+import {Box3, LineSegments, Mesh, Object3D, Vector3} from "three";
 import CladdingViewer from "../../CladdingViewer"
 import {IBuildingConfiguration} from "../Models/Environment";
 import Section from "../Models/SectionObject/Section"
@@ -47,8 +47,8 @@ export default class ViewerCommands {
     if (event.altKey && event.code === "KeyW") {
       instance.viewer.activeCamera = instance.viewer.camera3D
       instance.viewer.selection.updateCamera(instance.viewer.activeCamera)
-      instance.viewer.renderer.update()
       instance.viewer.sections.showSections(instance.viewer.claddingObjectsGroup)
+      instance.viewer.renderer.update()
     }
     
     // T => Top View
@@ -74,16 +74,21 @@ export default class ViewerCommands {
       instance.viewer.selection.updateCamera(instance.viewer.activeCamera)
       instance.viewer.activeCamera.changeOrthographicCameraDirection("side")
       instance.viewer.renderer.update()
-    } else if (!event.altKey && event.code === "KeyP") {
+    } 
+
+    // P => Section view
+    else if (!event.altKey && event.code === "KeyP") {
       const section = instance.viewer.selection.getSelectedSection()
       if (section != null) {
         instance.viewer.sections.hideSections(instance.viewer.claddingObjectsGroup)
         const position = section.getCameraPosition(5)
         instance.viewer.activeCamera = instance.viewer.camera2D
         instance.viewer.selection.updateCamera(instance.viewer.activeCamera)
-        instance.viewer.selection.enable()
+       
         instance.viewer.activeCamera.changeOrthographicCameraSectionView(position, section.midpoint)
         instance.viewer.renderer.update()
+        instance.viewer.selection.enable()
+
       }
     }
   }
@@ -131,7 +136,9 @@ export default class ViewerCommands {
   showEdges() {
     const meshes = this.viewer.claddingObjectsGroup.children.filter(c => !(c instanceof LineSegments) && !c.userData['isSectionBox'])
     this.viewer.sections.sectionsList.forEach(s => s.deactivate())
-    if(!this.viewer.selection.isEnabled) this.viewer.selection.enable()
+    if (!this.viewer.selection.isEnabled) {
+      this.viewer.selection.enable()
+    }
     this.viewer.removedObjectsGroup.add(...meshes)
     this.viewer.scene.remove(...meshes)
     this.viewer.selection.removeSelections()
@@ -139,7 +146,9 @@ export default class ViewerCommands {
   
   showMeshes() {
     this.viewer.sections.sectionsList.forEach(s => s.deactivate())
-    if(!this.viewer.selection.isEnabled) this.viewer.selection.enable()
+    if (!this.viewer.selection.isEnabled) {
+      this.viewer.selection.enable()
+    }
     this.viewer.claddingObjectsGroup.add(...this.viewer.removedObjectsGroup.children)
     this.viewer.removedObjectsGroup.remove(...this.viewer.removedObjectsGroup.children)
     this.viewer.selection.removeSelections()
@@ -154,7 +163,7 @@ export default class ViewerCommands {
     this.command.executeCommand(new DeleteSectionCommand(section, this.viewer.claddingObjectsGroup, this.viewer.sections))
   }
   
-  updateProperties(selectedObjs: Mesh[], config: IBuildingConfiguration[]) {
-    this.command.executeCommand(new UpdatePropertiesCommand(selectedObjs, config))
+  updateProperties(selectedObjs: Mesh[] | Object3D[], config: IBuildingConfiguration[], selectedLines?: Mesh[] | Object3D[]) {
+    this.command.executeCommand(new UpdatePropertiesCommand(selectedObjs, config, selectedLines))
   }
 }

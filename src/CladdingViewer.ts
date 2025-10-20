@@ -10,7 +10,6 @@ import SceneSizes from './Application/Utils/SceneSizes'
 import Raycasting from './Application/Utils/Selections/Raycaster'
 import Selection from './Application/Utils/Selections/Selection'
 import Time from './Application/Utils/Time'
-import ViewPorthelper from './Application/Utils/ViewPortHelper'
 
 let instance: Viewer | null = null
 
@@ -32,7 +31,6 @@ export default class Viewer {
   environment: Environment
   command: Command
   grids: Grids2D
-  ViewPorthelper: ViewPorthelper
   ViewerCommands: ViewerCommands
   claddingObjectsGroup: THREE.Group
   sections: Sections
@@ -58,8 +56,16 @@ export default class Viewer {
     // Renderer
     this.renderer = new Renderer(this.canvas, this.sizes, this.scene, this, this.activeCamera)
     
-    this.ViewPorthelper = new ViewPorthelper(this.activeCamera, this.renderer)
-    
+    //#region Set viewPorts
+    /**
+     * Note:
+     *  This is a work around not a solid solution, the order of calling the set viewPort method affects how the renderer is updated for the gimzo
+     *  causing the desired effect of disabeling the rotation of the gimzo for 2D views
+     */
+    this.camera2D.setViewPortHelper(this.renderer)
+    this.camera3D.setViewPortHelper(this.renderer)
+    //#endregion
+
     // Additional cameras
     this.cameraList = []
     this.cameraList.push(this.camera3D)
@@ -119,13 +125,11 @@ export default class Viewer {
   public resize() {
     this.activeCamera.resize()
     this.renderer.resize()
-    this.ViewPorthelper.resize()
   }
   
   update() {
     this.activeCamera.update()
     this.renderer.update()
-    this.ViewPorthelper.update()
   }
   
   dispose() {

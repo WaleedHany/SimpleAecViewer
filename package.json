@@ -1,27 +1,37 @@
 {
   "name": "simpleaecviewer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Three.js-based AEC viewer API (facade singleton)",
   "author": "Waleed Hany",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "three": "^0.170.0"
+    "three": "^0.180.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waleedhany/simpleaecviewer.git"
   },
   "dependencies": {
-    "three-mesh-bvh": "^0.9.1",
+    "lodash": "^4.17.21",
     "three-spritetext": "^1.1.0",
-    "three-viewport-gizmo": "^2.2.0",
     "three.meshline": "^1.4.0"
   },
   "devDependencies": {
+    "@types/three": "^0.180.0",
+    "camera-controls": "^3.1.0",
+    "three": "^0.180.0",
+    "three-mesh-bvh": "^0.9.1",
+    "three-viewport-gizmo": "github:Fennec-hub/three-viewport-gizmo",
     "typescript": "^5.5.4"
   }
 }

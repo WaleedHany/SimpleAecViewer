@@ -1,6 +1,8 @@
 import CameraControls from 'camera-controls'
 import * as THREE from 'three'
 import SceneSizes from './SceneSizes'
+import Renderer from './Renderer'
+import ViewPorthelper from './ViewPortHelper'
 
 const clock = new THREE.Clock()
 
@@ -12,6 +14,7 @@ export default class Camera {
   isPrespective: boolean
   enableRotation: boolean
   instance: THREE.PerspectiveCamera | THREE.OrthographicCamera | any
+  ViewPorthelper: ViewPorthelper
   controls: CameraControls | any
   x: number = 0
   y: number = 0
@@ -43,6 +46,10 @@ export default class Camera {
       this.instance.position.set(5, 5, 5)
     }
     this.instance.up.set(0, 0, 1)
+  }
+
+  setViewPortHelper(renderer:Renderer){
+     this.ViewPorthelper = new ViewPorthelper(this, renderer)
   }
   
   setControls(enableRotation: boolean = true) {
@@ -139,6 +146,7 @@ export default class Camera {
         this.instance.up.set(0, 0, 1)
         break
     }
+    this.sizes.handleResize(this.canvas)
     this.instance.updateProjectionMatrix()
   }
   
@@ -168,12 +176,14 @@ export default class Camera {
       this.instance.top = 50 / this.instance.aspect
       this.instance.bottom = -50 / this.instance.aspect
     }
+    if(this.ViewPorthelper) this.ViewPorthelper.resize()
     this.instance.updateProjectionMatrix()
   }
   
   update() {
     const delta = clock.getDelta()
     this.controls.update(delta)
+    if(this.ViewPorthelper) this.ViewPorthelper.update()
   }
   
   dispose() {

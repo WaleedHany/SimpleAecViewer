@@ -10,21 +10,23 @@ export default class ViewPortHelper {
   renderer: THREE.WebGLRenderer
   instance: ViewportGizmo
   
-  constructor(camera: Camera, renderer: Renderer) {
-    this.camera = camera.instance
+  constructor(camera: Camera, renderer: Renderer) {   
     this.renderer = renderer.instance
+    this.camera = camera.instance
     this.instance = new ViewportGizmo(this.camera, this.renderer, this.getGizmoConfig())
-    //this.instance.attachControls(camera.controls)
     this.instance.addEventListener("start", () => (camera.controls.enabled = false))
     this.instance.addEventListener("end", () => (camera.controls.enabled = true))
-    this.instance.addEventListener("change", () => {
-      camera.controls.setPosition(...this.camera.position.toArray())
-    })
+    this.instance.addEventListener("change", () => camera.controls.setPosition(...this.camera.position.toArray()))
     camera.controls.addEventListener("update", () => {
       camera.controls.getTarget(this.instance.target)
       this.instance.update()
     })
     camera.controls.update()
+  }
+
+  updateCamera(camera: Camera){
+    this.camera = camera.instance
+    // t
   }
   
   resize() {
@@ -44,7 +46,7 @@ export default class ViewPortHelper {
       },
     };
     const edgeConfig = {
-      color: 0xDDDDDD,
+      color: 0xDADADA,
       enabled: true,
       opacity: 1,
       Radius: 1,
@@ -66,7 +68,7 @@ export default class ViewPortHelper {
       color: 0xAAAAAA,
       hover: {color: 0xAAAAAA},
     };
-    const type = "cube"
+    const type = "rounded-cube"
     
     const options: GizmoOptions = {
       background: darkBackground,

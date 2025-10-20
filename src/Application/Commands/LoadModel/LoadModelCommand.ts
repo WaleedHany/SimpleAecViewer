@@ -1,18 +1,20 @@
 import * as THREE from "three"
 import {Rhino3dmLoader} from 'three/examples/jsm/loaders/3DMLoader'
-import {dummyBuildingConfigurations} from './Configurations'
+import {dummyBuildingConfigurations} from "./Configurations";
 import Materials from "../../Models/Materials/Materials"
 import Camera from "../../Utils/Camera"
 import Command from "../Command"
 
 let that: LoadModelCommand
 export default class LoadModelCommand extends Command {
-  name:string
+  name: string
   camera: Camera
   loader: Rhino3dmLoader
   object: THREE.Object3D | any
   url: string;
   group: THREE.Group
+  // objectList: CladdingPannel[]
+  // addedObjects: CladdingPannel[]
   addedlines: THREE.LineSegments[] = []
   
   constructor(camera: Camera, group: THREE.Group, url: string) {
@@ -20,6 +22,7 @@ export default class LoadModelCommand extends Command {
     this.name = "load model"
     this.camera = camera
     this.group = group
+    //this.objectList = objectsList
     this.url = url
     this.loader = new Rhino3dmLoader()
     this.loader.setLibraryPath('https://cdn.jsdelivr.net/npm/rhino3dm@8.4.0/')
@@ -41,7 +44,13 @@ export default class LoadModelCommand extends Command {
     this.group.add(this.object);
     
     const material = Materials.lineMaterial;
-    const totalChildren = this.object.children.length;
+    //const totalChildren = this.object.children.length;
+    //const errorIndices = new Set<number>();
+    
+    // while (errorIndices.size < 5 && errorIndices.size < totalChildren) {
+    //   const rand = Math.floor(Math.random() * totalChildren);
+    //   errorIndices.add(rand);
+    // }
     
     this.object.children.forEach((child: THREE.Mesh, index: number) => {
       if (child instanceof THREE.Mesh) {
@@ -49,22 +58,28 @@ export default class LoadModelCommand extends Command {
         const lines = new THREE.LineSegments(edges, material)
         lines.scale.set(0.001, 0.001, 0.001)
         
-        child.userData['material'] = child.material;  
+        // Keep original material in case you need to restore later
+        child.userData['material'] = child.material
         child.userData['leftPanelProperties'] = dummyBuildingConfigurations
         
-        child.geometry.computeBoundsTree()
+        child.geometry.computeBoundsTree();
         
         const segmentMap = new Map();
-        const posAttr = lines.geometry.attributes.position
+        const posAttr = lines.geometry.attributes.position;
         for (let i = 0; i < posAttr.count; i += 2) {
           const start = new THREE.Vector3().fromBufferAttribute(posAttr, i).multiplyScalar(0.001)
           const end = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).multiplyScalar(0.001)
           const box = new THREE.Box3().setFromPoints([start.clone(), end.clone()])
-          segmentMap.set(i, {start, end, box, index: i})
+          segmentMap.set(i, {
+            start,
+            end,
+            box,
+            index: i,
+            leftPanelProperties: {...dummyBuildingConfigurations, selectionType: "edge"}
+          })
         }
         lines.userData['segments'] = segmentMap
-        lines.userData['leftPanelProperties'] = dummyBuildingConfigurations
-        
+         
         this.group.add(lines)
         this.addedlines.push(lines)
       }
@@ -79,6 +94,7 @@ export default class LoadModelCommand extends Command {
     if (this.object != null) {
       this.group.remove(this.object)
       this.addedlines.forEach(o => this.group.remove(o))
+      //that.objectList = that.objectList.filter(obj => !that.addedObjects.includes(obj))
     }
   }
   
@@ -99,9 +115,24 @@ export default class LoadModelCommand extends Command {
         o = null
       })
       this.object.traverse((child: THREE.Mesh) => {
+        // Test if it's a mesh
         if (child instanceof THREE.Mesh) {
           child.geometry.dispose()
           child = null
+          // Loop through the material properties
+          // if (child.material instanceof THREE.Material) {
+          //   // Test if there is a dispose function
+          //     if (typeof child.material.dispose === 'function')
+          //         child.material.dispose()
+          // }
+          // else if (child.material.length > 1) {
+          //     for (const key in child.material) {
+          //         const value = child.material[key]
+          //         // Test if there is a dispose function
+          //         if (value && typeof value.dispose === 'function')
+          //             value.dispose()
+          //     }
+          // }
         }
       })
     }
