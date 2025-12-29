@@ -23,6 +23,7 @@ export default class Environment {
 export type IBuildingConfiguration = {
   selectionType: "surface" | "edge",
   isError: { hasError: boolean, errorMessage: string },
+  isModified: boolean,
   sheet: {
     material: string,
     thickness: number | string

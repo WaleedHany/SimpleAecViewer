@@ -16,12 +16,8 @@ export default class SceneSizes extends EventsEmitter {
 
     // Observe the canvas parent for layout changes
     this.observer = new ResizeObserver(() => this.handleResize(canvas))
-    if (canvas.parentElement) {
-      this.observer.observe(canvas.parentElement)
-    }
-    else{
-      this.observer.observe(canvas)
-    }
+    if (canvas.parentElement) this.observer.observe(canvas.parentElement)
+    else this.observer.observe(canvas) 
 
     // Resize event
     window.addEventListener('resize', () => this.handleResize(canvas))

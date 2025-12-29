@@ -1,12 +1,13 @@
-import * as THREE from 'three'
+import _ from "lodash";
+import * as THREE from "three";
 import {acceleratedRaycast, computeBoundsTree, disposeBoundsTree} from 'three-mesh-bvh'
 import {SelectionHelper} from 'three/examples/jsm/interactive/SelectionHelper.js'
 import {Line2} from 'three/examples/jsm/lines/Line2.js'
 import {LineGeometry} from 'three/examples/jsm/lines/LineGeometry.js'
 import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js'
 import {LineSegments2} from 'three/examples/jsm/lines/LineSegments2'
-import {LineSegmentsGeometry} from 'three/examples/jsm/lines/LineSegmentsGeometry'
-import {dummyBuildingConfigurations} from "../../Commands/LoadModel/Configurations"
+import {LineSegmentsGeometry} from 'three/examples/jsm/lines/LineSegmentsGeometry';
+import {dummyBuildingConfigurations} from "../../../../_configurations/app-config";
 import ViewerCommands from '../../Commands/ViewerCommands'
 import Materials from "../../Models/Materials/Materials"
 import Section from '../../Models/SectionObject/Section'
@@ -21,7 +22,7 @@ let cameraVector = new THREE.Vector3()
 let dir = new THREE.Vector3()
 
 export default class Selection extends EventsEmitter {
-  selectedObjects: THREE.Mesh[] = []
+  selectedObjects: any = []
   isEnabled = false
   private canvas: HTMLCanvasElement
   private camera: Camera
@@ -65,10 +66,10 @@ export default class Selection extends EventsEmitter {
     this.lineSelectedMaterial = Materials.lineSelectedMaterial
     this.selection = new SelectionBox(this.camera.instance, this.scene)
     this.helper = new SelectionHelper(this.renderer.instance, 'selectBox')
-
-	this.helper.onSelectOver = ()=> {
-		this.helper?.element?.parentElement?.removeChild( this.helper.element )
-	}
+    
+    this.helper.onSelectOver = () => {
+      this.helper?.element?.parentElement?.removeChild(this.helper.element)
+    }
     this.startFlag = false
     this.comands = ViewerCommands.GetInstance()
   }
@@ -96,86 +97,6 @@ export default class Selection extends EventsEmitter {
     // remove all elements from selected list
     this.selectedObjects = []
     this.trigger('selectionUpdated', [])
-  }
-  
-  mouseUp(event) {
-    if (event.button === 0 && instance.startFlag) {
-      instance.updateMousePosition(event)
-      instance.selection.endPoint.set(instance.mouse.x, instance.mouse.y, 0.5)
-      let distance = instance.selection.endPoint.distanceTo(instance.selection.startPoint)
-      if (distance > 0.1) {
-        // get selected elements
-        const allSelected = instance.selection.select()
-        const frustum = instance.selection.getFrustum()
-        let hasChanges = false
-        // Step 3: Manually test segmentData items
-        allSelected.forEach((c: THREE.Mesh | THREE.Object3D) => {
-          let linesPositions: number[] = []
-          let selectedLines: any[] = []
-          if (c instanceof THREE.Mesh && c.userData['material']) {
-            let selectedOject = instance.selectedObjects.find(e => e.uuid == c.uuid)
-            if (!selectedOject) {
-              c.material = instance.selectedMaterial
-              instance.selectedObjects.push(c)
-              hasChanges = true
-            }
-          } else if ((c instanceof THREE.Line) && c.userData['segments']) {
-            let map = c.userData['segments']
-            for (const part of map) {
-              const segment = part[1]
-              if (frustum.intersectsBox(segment.box)) {
-                let start = segment.start.clone()
-                let end = segment.end.clone()
-                const line = new THREE.Line3(start, end)
-                let vec = new THREE.Vector3(-1000000, -10000000, -1000000)
-                let intersects = false
-                if (frustum.containsPoint(start) || frustum.containsPoint(end)) {
-                  intersects = true
-                } else {
-                  for (const plane of frustum.planes) {
-                    plane.intersectLine(line, vec)
-                    const closestPoint = line.closestPointToPoint(vec, true, new THREE.Vector3());
-                    const distance = closestPoint.distanceTo(vec);
-                    if (frustum.containsPoint(vec) && distance <= 1.0e-4) {
-                      intersects = true
-                      break
-                    }
-                  }
-                }
-                if (intersects) {
-                  linesPositions.push(
-                    start.x, start.y, start.z,
-                    end.x, end.y, end.z
-                  )
-                  selectedLines.push({start, end})
-                }
-              }
-            }
-            if (linesPositions.length > 0 && linesPositions.length % 6 == 0) {
-              const geometry = new LineSegmentsGeometry()
-              geometry.setPositions(linesPositions)
-              
-              const mesh = new LineSegments2(geometry, instance.lineSelectedMaterial)
-              mesh.computeLineDistances()
-              
-              mesh.userData['isLinear'] = true
-              mesh.userData['segments'] = selectedLines
-              mesh.userData['attributes'] = c.userData['attributes']
-              
-              instance.scene.add(mesh)
-              instance.selectedObjects.push(mesh)
-              hasChanges = true
-            }
-          }
-        })
-        if (hasChanges) {
-          instance.trigger('selectionUpdated', [instance.selectedObjects.map(s => s.userData.leftPanelProperties)])
-        }
-      }
-      instance.hideSelectionBox()
-      // new selection started to false
-      instance.startFlag = false
-    }
   }
   
   updateCamera(camera: Camera) {
@@ -232,6 +153,97 @@ export default class Selection extends EventsEmitter {
     return found;
   }
   
+  mouseUp(event) {
+    if (event.button === 0 && instance.startFlag) {
+      instance.updateMousePosition(event)
+      instance.selection.endPoint.set(instance.mouse.x, instance.mouse.y, 0.5)
+      let distance = instance.selection.endPoint.distanceTo(instance.selection.startPoint)
+      if (distance > 0.1) {
+        // get selected elements
+        const allSelected = instance.selection.select()
+        const frustum = instance.selection.getFrustum()
+        let hasChanges = false
+        // Step 3: Manually test segmentData items
+        
+        allSelected.forEach((c: THREE.Mesh | THREE.Object3D) => {
+          let linesPositions: number[] = []
+          let selectedLines: any[] = []
+          if (c instanceof THREE.Mesh && c.userData['material']) {
+            let selectedOject = instance.selectedObjects.find(e => e.uuid == c.uuid)
+            if (!selectedOject) {
+              c.material = instance.selectedMaterial
+              instance.selectedObjects.push(c)
+              hasChanges = true
+            }
+          } else if ((c instanceof THREE.Line) && c.userData['segments']) {
+            let map = c.userData['segments']
+            for (const part of map) {
+              const segment = part[1]
+              if (frustum.intersectsBox(segment.box)) {
+                let start = segment.start.clone()
+                let end = segment.end.clone()
+                const line = new THREE.Line3(start, end)
+                let vec = new THREE.Vector3(-1000000, -10000000, -1000000)
+                let intersects = false
+                if (frustum.containsPoint(start) || frustum.containsPoint(end)) {
+                  intersects = true
+                } else {
+                  for (const plane of frustum.planes) {
+                    plane.intersectLine(line, vec)
+                    const closestPoint = line.closestPointToPoint(vec, true, new THREE.Vector3());
+                    const distance = closestPoint.distanceTo(vec);
+                    if (frustum.containsPoint(vec) && distance <= 1.0e-4) {
+                      intersects = true
+                      break
+                    }
+                  }
+                }
+                if (intersects) {
+                  linesPositions.push(
+                    start.x, start.y, start.z,
+                    end.x, end.y, end.z
+                  )
+                  selectedLines.push({start, end})
+                }
+              }
+            }
+            if (linesPositions.length > 0 && linesPositions.length % 6 == 0) {
+              const geometry = new LineSegmentsGeometry()
+              geometry.setPositions(linesPositions)
+              
+              const mesh = new LineSegments2(geometry, instance.lineSelectedMaterial)
+              mesh.computeLineDistances()
+              
+              mesh.userData['isLinear'] = true
+              // mesh.userData['segments'] = selectedLines
+              mesh.userData['attributes'] = c.userData
+              
+              instance.scene.add(mesh)
+              instance.selectedObjects.push(mesh)
+              hasChanges = true
+            }
+          }
+        })
+        if (hasChanges) {
+          // Collect all leftPanelProperties into one array
+          const allLeftPanelProperties = instance.selectedObjects.flatMap(lineSeg => {
+            const segments = lineSeg.userData?.attributes?.segments;
+            if (!segments) {
+              return []
+            }
+            
+            // Each segment is stored as a Map(key => value)
+            return Array.from(segments.values()).map((seg: any) => seg.leftPanelProperties);
+          });
+          const cleanArray = _.filter(instance.selectedObjects.map(s => s.userData.leftPanelProperties), value => !_.isNil(value));
+          instance.trigger('selectionUpdated', [[...cleanArray, ...allLeftPanelProperties]])
+        }
+      }
+      instance.hideSelectionBox()
+      // new selection started to false
+      instance.startFlag = false
+    }
+  }
   
   private updateMousePosition(event: any) {
     const rect = this.canvas.getBoundingClientRect()
@@ -267,7 +279,7 @@ export default class Selection extends EventsEmitter {
       if (object instanceof THREE.Mesh && this.highlightedObject != object) {
         this.clearHighlight()
         this.highlightedObject = new THREE.Mesh(object.geometry.clone(), this.highlightMaterial)
-        this.highlightedObject.scale.set(0.001, 0.001, 0.001)
+        this.highlightedObject.scale.setScalar(object.userData.unit.scaleFactor)
         this.highlightedObject.renderOrder = 2
         this.highlightedObject['source'] = object
         this.scene.add(this.highlightedObject)
@@ -295,6 +307,8 @@ export default class Selection extends EventsEmitter {
           this.highlightedLine.userData['endPoint'] = points.end
           this.highlightedLine.userData['original'] = intersection[0].object.id
           this.highlightedLine.userData['intersectionIndex'] = intersection[0].index
+          this.highlightedLine.userData['unit'] = intersection[0].object.userData['unit']
+          this.highlightedLine.userData['surfaceId'] = intersection[0].object.userData['surfaceId']
         }
       }
     } else {
@@ -352,6 +366,8 @@ export default class Selection extends EventsEmitter {
           line.userData['startPoint'] = intersection.userData['startPoint']
           line.userData['endPoint'] = intersection.userData['endPoint']
           line.userData['intersectionIndex'] = intersection?.userData?.intersectionIndex
+          line.userData['unit'] = intersection?.userData['unit']
+          this.highlightedLine.userData['surfaceId'] = intersection?.userData['surfaceId']
           line.userData['leftPanelProperties'] = original ? leftPropertyPanel : {
             ...dummyBuildingConfigurations,
             selectionType: "edge"

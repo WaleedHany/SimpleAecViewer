@@ -10,12 +10,7 @@ import SceneSizes from './Application/Utils/SceneSizes'
 import Raycasting from './Application/Utils/Selections/Raycaster'
 import Selection from './Application/Utils/Selections/Selection'
 import Time from './Application/Utils/Time'
-
 let instance: Viewer | null = null
-
-/**
- * Initalize the main programe
- */
 export default class Viewer {
   canvas: HTMLCanvasElement
   sizes: SceneSizes
@@ -35,56 +30,31 @@ export default class Viewer {
   claddingObjectsGroup: THREE.Group
   sections: Sections
   removedObjectsGroup: THREE.Group = new THREE.Group()
-  
   private constructor(_canvas: HTMLCanvasElement) {
     instance = this
-    // Canvas
     this.canvas = _canvas
-    // sizes
     this.sizes = new SceneSizes(this.canvas)
     this.sizes.on('resize', () => {
       this.resize()
     })
     THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
-    // Scene
-    this.scene = new THREE.Scene()
-    
-    // Cameras
+    this.scene = new THREE.Scene() 
     this.camera3D = new Camera(this.sizes, this.scene, this.canvas, false)
     this.camera2D = new Camera(this.sizes, this.scene, this.canvas, false, false)
     this.activeCamera = this.camera3D
-    // Renderer
     this.renderer = new Renderer(this.canvas, this.sizes, this.scene, this, this.activeCamera)
-    
-    //#region Set viewPorts
-    /**
-     * Note:
-     *  This is a work around not a solid solution, the order of calling the set viewPort method affects how the renderer is updated for the gimzo
-     *  causing the desired effect of disabeling the rotation of the gimzo for 2D views
-     */
     this.camera2D.setViewPortHelper(this.renderer)
     this.camera3D.setViewPortHelper(this.renderer)
-    //#endregion
-
-    // Additional cameras
     this.cameraList = []
     this.cameraList.push(this.camera3D)
     this.cameraList.push(this.camera2D)
-    
-    // Main view
     this.environment = new Environment(this.scene)
-    
-    // Time
     this.time = new Time()
     this.time.on('tick', () => this.update())
-    
     this.claddingObjectsGroup = new THREE.Group()
     this.scene.add(this.claddingObjectsGroup)
-    
     this.command = new Command()
     this.ViewerCommands = ViewerCommands.initialize(this, this.command)
-    
-    // Element selection/hover
     this.selection = Selection.initialize(this.canvas, this.activeCamera, this.renderer, this.scene, this.claddingObjectsGroup)
     this.selection.enable()
     this.raycasting = Raycasting.InitializeRaycaster(this.activeCamera, this.scene, this.renderer, this.claddingObjectsGroup, this.selection)
@@ -97,56 +67,37 @@ export default class Viewer {
         this.raycasting.disable()
       }
     })
-    // Grids
-    //this.grids = new Grids2D(new THREE.Vector3(0, 0, 0), 80, 80, 8, 8)
-    //this.scene.add(this.grids.grids2D)
     const axesHelper = new THREE.AxesHelper( 5 )
     this.scene.add( axesHelper )
-    
-    // this.command.on('undo', () => instance.selection.removeSelections())
-    // this.selection.on("selectionUpdated", (args) => console.log(args))
   }
-  
   public static initialize(canvas: HTMLCanvasElement) {
     return instance ?? (instance = new Viewer(canvas));
   }
-  
   public static getInstance() {
     return instance
   }
-  
   resetCamera() {
     if (this.cameraList.length > 0) {
       this.activeCamera = this.cameraList[0]
       this.renderer.camera = this.activeCamera
     }
   }
-  
   public resize() {
     this.activeCamera.resize()
     this.renderer.resize()
   }
-  
   update() {
     this.activeCamera.update()
     this.renderer.update()
   }
-  
   dispose() {
     this.sizes.off('resize')
     this.time.off('tick')
-    
-    // Traverse the whole scene
     this.scene.traverse((child) => {
-      // Test if it's a mesh
       if (child instanceof THREE.Mesh) {
         child.geometry.dispose()
-        
-        // Loop through the material properties
         for (const key in child.material) {
           const value = child.material[key]
-          
-          // Test if there is a dispose function
           if (value && typeof value.dispose === 'function') {
             value.dispose()
           }

@@ -60,10 +60,10 @@ export default class UpdatePropertiesCommand extends Command {
     console.log(_.cloneDeep(config));
     
     items.forEach((s, index) => {
-      const existing = s.userData["leftPanelProperties"] ?? {}
+      const existing = s.userData["leftPanelProperties"] ?? {};
       
-      // Merge new config with existing properties
-      s.userData["leftPanelProperties"] = _.merge({}, existing, config[index])
+      // 🟩 Merge new config with existing properties
+      s.userData["leftPanelProperties"] = _.merge({}, existing, config[index]);
       
       if (s.userData.segments && lineSegments) {
         console.log("line");
@@ -73,7 +73,7 @@ export default class UpdatePropertiesCommand extends Command {
         );
         
         if (segment) {
-          const existingSegmentProps = segment["leftPanelProperties"] ?? {}
+          const existingSegmentProps = segment["leftPanelProperties"] ?? {};
           segment["leftPanelProperties"] = _.merge(
             {},
             existingSegmentProps,
@@ -84,7 +84,7 @@ export default class UpdatePropertiesCommand extends Command {
         console.log("not a line");
         
         for (const segment of s.userData.segments.values()) {
-          const existingSegmentProps = segment["leftPanelProperties"] ?? {}
+          const existingSegmentProps = segment["leftPanelProperties"] ?? {};
           segment["leftPanelProperties"] = _.merge(
             {},
             existingSegmentProps,
@@ -93,6 +93,7 @@ export default class UpdatePropertiesCommand extends Command {
           );
         }
       }
-    })
+    });
   }
+  
 }

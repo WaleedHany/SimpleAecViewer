@@ -166,4 +166,158 @@ export default class ViewerCommands {
   updateProperties(selectedObjs: Mesh[] | Object3D[], config: IBuildingConfiguration[], selectedLines?: Mesh[] | Object3D[]) {
     this.command.executeCommand(new UpdatePropertiesCommand(selectedObjs, config, selectedLines))
   }
+
+  queryModifiedElements() {
+    type ModifiedObjectElement = {
+      guid: string
+      leftPanelProperties: {
+        sheet: IBuildingConfiguration['sheet'];
+        fixation: IBuildingConfiguration['fixation'];
+        stiffeners: IBuildingConfiguration['stiffeners'];
+      };
+    };
+
+    type ModifiedLineElement = {
+      start: THREE.Vector3
+      end: THREE.Vector3
+      surfaceGuid?: string
+      leftPanelProperties: {
+        fixation: IBuildingConfiguration['fixation'];
+      };
+    };
+
+    const modifiedObjects: ModifiedObjectElement[] = [];
+    const modifiedLines: ModifiedLineElement[] = [];
+
+    const group = this.viewer.claddingObjectsGroup;
+    if (!group || group.children.length === 0) {
+      return { objects: modifiedObjects, lines: modifiedLines };
+    }
+
+    /* -----------------------------
+     * 1. Modified SURFACE OBJECTS
+     * ----------------------------- */
+    const surfacesContainer = group.children[0];
+
+    surfacesContainer.children.forEach((child) => {
+      if (!(child instanceof Mesh)) return;
+
+      const props = child.userData?.leftPanelProperties as IBuildingConfiguration | undefined;
+      if (!props?.isModified) return;
+
+      modifiedObjects.push({
+        guid: child.userData.attributes.id,
+        leftPanelProperties: {
+          sheet: props.sheet,
+          fixation: props.fixation,
+          stiffeners: props.stiffeners,
+        }
+      })
+    })
+
+    /* -----------------------------
+     * 2. Modified LINE SEGMENTS
+     * ----------------------------- */
+    group.children.slice(1).forEach((lineContainer) => {
+      if (!(lineContainer.userData?.segments instanceof Map)) return;
+
+      const surfaceGuid = lineContainer.userData.surfaceId
+      const unit = lineContainer.userData.unit;
+
+      lineContainer.userData.segments.forEach((segment: any) => {
+        const props = segment.leftPanelProperties as IBuildingConfiguration | undefined;
+        if (!props?.isModified) return;
+
+        modifiedLines.push({
+          start: segment.start.clone().multiplyScalar(1/unit.scaleFactor),
+          end: segment.end.clone().multiplyScalar(1/unit.scaleFactor),
+          surfaceGuid: surfaceGuid,
+          leftPanelProperties: {
+            fixation: props.fixation,
+          }
+        })
+      })
+    })
+
+    // console.log("Modified Elements Query Result:", { objects: modifiedObjects, lines: modifiedLines })
+    return { surfaces: modifiedObjects, lines: modifiedLines };
+  }
+
+  queryGlobalElements() {
+    type GlobalObjectElement = {
+      guid: string
+      leftPanelProperties: {
+        sheet: IBuildingConfiguration['sheet'];
+        fixation: IBuildingConfiguration['fixation'];
+        stiffeners: IBuildingConfiguration['stiffeners'];
+      };
+    };
+
+    type GlobalLineElement = {
+      start: THREE.Vector3
+      end: THREE.Vector3
+      surfaceGuid?: string
+      leftPanelProperties: {
+        fixation: IBuildingConfiguration['fixation'];
+      };
+    };
+
+    const globalObjects: GlobalObjectElement[] = [];
+    const globalLines: GlobalLineElement[] = [];
+
+    const group = this.viewer.claddingObjectsGroup;
+    if (!group || group.children.length === 0) {
+      return { objects: globalObjects, lines: globalLines };
+    }
+
+    /* -----------------------------
+     * 1. Global SURFACE OBJECTS
+     * ----------------------------- */
+    const surfacesContainer = group.children[0]
+
+    surfacesContainer.children.forEach((child) => {
+      if (!(child instanceof Mesh)) return
+
+      const props = child.userData?.leftPanelProperties as IBuildingConfiguration | undefined
+      // Include only elements that are NOT modified (using global configuration)
+      if (!props || props.isModified) return
+
+      globalObjects.push({
+        guid: child.userData.attributes.id,
+        leftPanelProperties: {
+          sheet: props.sheet,
+          fixation: props.fixation,
+          stiffeners: props.stiffeners,
+        }
+      })
+    })
+
+    /* -----------------------------
+     * 2. Global LINE SEGMENTS
+     * ----------------------------- */
+    group.children.slice(1).forEach((lineContainer) => {
+      if (!(lineContainer.userData?.segments instanceof Map)) return
+
+      const surfaceGuid = lineContainer.userData.surfaceId 
+      const unit = lineContainer.userData.unit
+
+      lineContainer.userData.segments.forEach((segment: any) => {
+        const props = segment.leftPanelProperties as IBuildingConfiguration | undefined
+        // Include only segments that are NOT modified (using global configuration)
+        if (!props || props.isModified) return
+
+        globalLines.push({
+          start: segment.start.clone().multiplyScalar(1/unit.scaleFactor),
+          end: segment.end.clone().multiplyScalar(1/unit.scaleFactor),
+          surfaceGuid: surfaceGuid,
+          leftPanelProperties: {
+            fixation: props.fixation,
+          }
+        })
+      })
+    })
+
+    // console.log("Global Elements Query Result:", { objects: globalObjects, lines: globalLines })
+    return { surfaces: globalObjects, lines: globalLines };
+  }
 }

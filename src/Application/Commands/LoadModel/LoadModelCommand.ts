@@ -1,9 +1,11 @@
 import * as THREE from "three"
 import {Rhino3dmLoader} from 'three/examples/jsm/loaders/3DMLoader'
-import {dummyBuildingConfigurations} from "./Configurations";
+import {dummyBuildingConfigurations, errorBuildingConfigurations} from "../../Models/Configurations";
 import Materials from "../../Models/Materials/Materials"
 import Camera from "../../Utils/Camera"
 import Command from "../Command"
+import Units from "../../Models/Units";
+// import CladdingPannel from "../../Models/CladdingObjects/CladdingPannel"
 
 let that: LoadModelCommand
 export default class LoadModelCommand extends Command {
@@ -13,6 +15,7 @@ export default class LoadModelCommand extends Command {
   object: THREE.Object3D | any
   url: string;
   group: THREE.Group
+  scaleFactor:number
   // objectList: CladdingPannel[]
   // addedObjects: CladdingPannel[]
   addedlines: THREE.LineSegments[] = []
@@ -40,35 +43,32 @@ export default class LoadModelCommand extends Command {
     })
     
     this.object = object;
-    this.object.scale.set(0.001, 0.001, 0.001)
-    this.group.add(this.object);
-    
-    const material = Materials.lineMaterial;
-    //const totalChildren = this.object.children.length;
-    //const errorIndices = new Set<number>();
-    
-    // while (errorIndices.size < 5 && errorIndices.size < totalChildren) {
-    //   const rand = Math.floor(Math.random() * totalChildren);
-    //   errorIndices.add(rand);
-    // }
-    
+    this.scaleFactor = this.getUnitScaleFactor()
+    this.object.scale.setScalar(this.scaleFactor)
+    this.group.add(this.object);   
+    const material = Materials.lineMaterial
     this.object.children.forEach((child: THREE.Mesh, index: number) => {
       if (child instanceof THREE.Mesh) {
         const edges = new THREE.EdgesGeometry(child.geometry)
         const lines = new THREE.LineSegments(edges, material)
-        lines.scale.set(0.001, 0.001, 0.001)
-        
-        // Keep original material in case you need to restore later
-        child.userData['material'] = child.material
+        lines.scale.set(this.scaleFactor, this.scaleFactor, this.scaleFactor)    
+        child.userData['material'] = child.material;    
+
         child.userData['leftPanelProperties'] = dummyBuildingConfigurations
-        
+        child.userData['unit'] = {
+          inputRhinoModelUnit:this.object?.userData?.settings?.modelUnitSystem?.name, 
+          currentUnit: "UnitSystem_Meters",
+          currentUnitValue: 4,
+          scaleFactor:this.scaleFactor
+        }
+      
         child.geometry.computeBoundsTree();
         
         const segmentMap = new Map();
         const posAttr = lines.geometry.attributes.position;
         for (let i = 0; i < posAttr.count; i += 2) {
-          const start = new THREE.Vector3().fromBufferAttribute(posAttr, i).multiplyScalar(0.001)
-          const end = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).multiplyScalar(0.001)
+          const start = new THREE.Vector3().fromBufferAttribute(posAttr, i).multiplyScalar(this.scaleFactor)
+          const end = new THREE.Vector3().fromBufferAttribute(posAttr, i + 1).multiplyScalar(this.scaleFactor)
           const box = new THREE.Box3().setFromPoints([start.clone(), end.clone()])
           segmentMap.set(i, {
             start,
@@ -79,7 +79,14 @@ export default class LoadModelCommand extends Command {
           })
         }
         lines.userData['segments'] = segmentMap
-         
+        lines.userData['surfaceId'] = child.userData.attributes.id
+        lines.userData['unit'] = {
+            inputRhinoModelUnit:this.object?.userData?.settings?.modelUnitSystem?.name, 
+            currentUnit: "UnitSystem_Meters",
+            currentUnitValue: 4,
+            scaleFactor:this.scaleFactor
+          }
+
         this.group.add(lines)
         this.addedlines.push(lines)
       }
@@ -137,4 +144,33 @@ export default class LoadModelCommand extends Command {
       })
     }
   }
+
+    private getUnitScaleFactor(target: "meters" | "millimeters" | "centimeters" | "feet" | "inches" = "meters"): number {
+        const settings = this.object?.userData?.settings?.modelUnitSystem;
+        const unitValue: number | undefined = settings?.value;
+        const unitName: string | undefined = settings?.name;
+
+        const fromMeters =
+          (typeof unitValue === "number" && Units.UnitToMetersByValue[unitValue] != null)
+            ? Units.UnitToMetersByValue[unitValue]
+            : (typeof unitName === "string"
+                ? Units.UnitToMetersByName[unitName.trim().toLowerCase()]
+                : undefined);
+            
+        // if unknown, assume already in meters
+        const fromToMeters = fromMeters ?? 1;
+            
+        const targetToMeters =
+          target === "meters" ? 1 :
+          target === "millimeters" ? 1e-3 :
+          target === "centimeters" ? 1e-2 :
+          target === "feet" ? 0.3048 :
+          target === "inches" ? 0.0254 :
+          1;
+            
+        // factor to go from "model units" to target units:
+        // model -> meters: multiply by fromToMeters
+        // meters -> target: divide by targetToMeters
+        return fromToMeters / targetToMeters;
+    }
 }
