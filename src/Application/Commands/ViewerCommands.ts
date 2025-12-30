@@ -191,7 +191,7 @@ export default class ViewerCommands {
 
     const group = this.viewer.claddingObjectsGroup;
     if (!group || group.children.length === 0) {
-      return { objects: modifiedObjects, lines: modifiedLines };
+      return { surfaces: modifiedObjects, lines: modifiedLines };
     }
 
     /* -----------------------------
@@ -267,7 +267,7 @@ export default class ViewerCommands {
 
     const group = this.viewer.claddingObjectsGroup;
     if (!group || group.children.length === 0) {
-      return { objects: globalObjects, lines: globalLines };
+      return { surfaces: globalObjects, lines: globalLines } // return { objects: globalObjects, lines: globalLines };
     }
 
     /* -----------------------------
