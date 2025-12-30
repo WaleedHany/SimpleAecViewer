@@ -1,6 +1,6 @@
 {
   "name": "simpleaecviewer",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Three.js-based AEC viewer API (facade singleton)",
   "author": "Waleed Hany",
   "license": "MIT",
